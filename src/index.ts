@@ -3,7 +3,7 @@
  * Modified, Updated at Minggu, 20 Februari 2022
  */
 
-import fs from 'fs'
+import fs from 'fs';
 import FormData from 'form-data';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { bufferToStream, getPostType, parseCookie, randInt, shortcodeFormatter } from './utils/index';
@@ -22,8 +22,8 @@ import { MediaConfigureOptions } from './types/MediaConfigureOptions';
 import { UserGraphQlV2, Graphql } from './types/UserGraphQlV2';
 import { IPaginatedPosts } from './types/PaginatedPosts';
 
-export * from './utils'
-export * as InstagramMetadata from './types'
+export * from './utils';
+export * as InstagramMetadata from './types';
 export * from './helper/Session';
 export class igApi {
 	/**
@@ -36,7 +36,7 @@ export class igApi {
 		this.IgCookie = IgCookie;
 		this.AxiosOpts = AxiosOpts;
 	}
-	private accountUserId = this.IgCookie.match(/sessionid=(.*?);/)?.[1].split('%')[0] || ''
+	private accountUserId = this.IgCookie.match(/sessionid=(.*?);/)?.[1].split('%')[0] || '';
 
 	private buildHeaders = (agent: string = config.android, options?: any) => {
 		return {
@@ -53,16 +53,16 @@ export class igApi {
 			'x-ig-www-claim': 'hmac.AR3W0DThY2Mu5Fag4sW5u3RhaR3qhFD_5wvYbOJOD9qaPjIf',
 			'x-instagram-ajax': 1,
 			'x-requested-with': 'XMLHttpRequest',
-			...options
+			...options,
 		};
-	}
+	};
 
 	/**
 	 * Make request to IG API
-	 * @param baseURL 
-	 * @param url 
-	 * @param agent 
-	 * @param AxiosOptions 
+	 * @param baseURL
+	 * @param url
+	 * @param agent
+	 * @param AxiosOptions
 	 */
 	private FetchIGAPI = (baseURL: string, url: string = '', agent: string = config.android, AxiosOptions: AxiosRequestConfig = {}): Promise<AxiosResponse> | undefined => {
 		try {
@@ -72,13 +72,18 @@ export class igApi {
 				headers: AxiosOptions.headers ? AxiosOptions.headers : this.buildHeaders(agent),
 				method: AxiosOptions.method || 'GET',
 				...AxiosOptions,
-				...this.AxiosOpts
+				...this.AxiosOpts,
 			});
-		} catch (error) {
+		}
+		catch (error) {
 			if (axios.isAxiosError(error)) {
-				throw error.response
+				throw error.response;
 			}
 		}
+	};
+
+	public setCookie(cookie: string): void {
+		this.IgCookie = cookie;
 	}
 
 	/**
@@ -89,7 +94,7 @@ export class igApi {
 	public getIdByUsername = async (username: username): Promise<string> => {
 		const res = await this.fetchUserV2(username);
 		return res?.id as userId;
-	}
+	};
 
 	public searchFollower = async (userId: userId, seachTerm: seachTerm): Promise<ISearchFollow> => {
 		const res = await this.FetchIGAPI(
@@ -97,8 +102,8 @@ export class igApi {
 			`/friendships/${userId}/followers/?count=12&query=${seachTerm}&search_surface=follow_list_page`,
 			config.iPhone,
 		);
-		return res?.data || res
-	}
+		return res?.data || res;
+	};
 
 	public searchFollowing = async (userId: userId, seachTerm: seachTerm): Promise<ISearchFollow> => {
 		const res = await this.FetchIGAPI(
@@ -106,12 +111,12 @@ export class igApi {
 			`/friendships/${userId}/following/?query=${seachTerm}`,
 			config.iPhone,
 		);
-		return res?.data || res
-	}
+		return res?.data || res;
+	};
 
 	private _formatSidecar = (data: IRawBody): Array<MediaUrls> => {
-		const gql = data.items[0]
-		let urls: MediaUrls[] = []
+		const gql = data.items[0];
+		const urls: MediaUrls[] = [];
 		if (gql.product_type == ProductType.CAROUSEL) {
 			gql.carousel_media.forEach((v, i, a) => {
 				urls.push({
@@ -120,50 +125,53 @@ export class igApi {
 					type: v.media_type == MediaType.IMAGE ? 'image' : 'video',
 					dimensions: {
 						height: v.media_type == MediaType.IMAGE ? v.image_versions2.candidates[0].height : v.video_versions?.[0].height || 0,
-						width: v.media_type == MediaType.IMAGE ? v.image_versions2.candidates[0].width : v.video_versions?.[0].width || 0
-					}
-				})
-			})
-		} else if (gql.product_type == ProductType.REEL) {
+						width: v.media_type == MediaType.IMAGE ? v.image_versions2.candidates[0].width : v.video_versions?.[0].width || 0,
+					},
+				});
+			});
+		}
+		else if (gql.product_type == ProductType.REEL) {
 			urls.push({
 				id: gql.id,
 				url: gql.video_versions[0].url,
 				type: 'video',
 				dimensions: {
 					height: gql.video_versions[0].height,
-					width: gql.video_versions[0].width
-				}
-			})
-		} else if (gql.product_type == ProductType.TV) {
+					width: gql.video_versions[0].width,
+				},
+			});
+		}
+		else if (gql.product_type == ProductType.TV) {
 			urls.push({
 				id: gql.id,
 				url: gql.video_versions[0].url,
 				type: 'video',
 				dimensions: {
 					height: gql.video_versions[0].height,
-					width: gql.video_versions[0].width
-				}
-			})
-		} else if (gql.product_type == ProductType.SINGLE) {
+					width: gql.video_versions[0].width,
+				},
+			});
+		}
+		else if (gql.product_type == ProductType.SINGLE) {
 			urls.push({
 				id: gql.id,
 				url: gql.media_type == MediaType.IMAGE ? gql.image_versions2.candidates[0].url : gql.video_versions?.[0].url || '',
 				type: gql.media_type == MediaType.IMAGE ? 'image' : 'video',
 				dimensions: {
 					height: gql.media_type == MediaType.IMAGE ? gql.image_versions2.candidates[0].height : gql.video_versions?.[0].height || 0,
-					width: gql.media_type == MediaType.IMAGE ? gql.image_versions2.candidates[0].width : gql.video_versions?.[0].width || 0
-				}
-			})
+					width: gql.media_type == MediaType.IMAGE ? gql.image_versions2.candidates[0].width : gql.video_versions?.[0].width || 0,
+				},
+			});
 		}
-		return urls
-	}
+		return urls;
+	};
 
 	public fetchPost = async (url: url): Promise<IPostModels> => {
 		const post = shortcodeFormatter(url);
 
-		const metadata = await this.fetchPostByMediaId(post.media_id)
+		const metadata = await this.fetchPostByMediaId(post.media_id);
 
-		const item = metadata.items[0]
+		const item = metadata.items[0];
 		return {
 			username: item.user.username,
 			name: item.user.full_name,
@@ -178,60 +186,62 @@ export class igApi {
 			video_duration: item?.video_duration || null,
 			music: item?.clips_metadata || null,
 			links: this._formatSidecar(metadata),
-		}
-	}
+		};
+	};
 
 	public fetchPostByMediaId = async (mediaId: string | number): Promise<IRawBody> => {
 		try {
 			const res = await this.FetchIGAPI(
 				config.instagram_api_v1,
-				`/media/${mediaId.toString()}/info/`
-			)
-			return res?.data
-		} catch (error) {
-			throw error
+				`/media/${mediaId.toString()}/info/`,
+			);
+			return res?.data;
 		}
-	}
+		catch (error) {
+			throw error;
+		}
+	};
 
 	public fetchPostByShortcode = async (shortcode: string): Promise<PostGraphQL> => {
 		const res = await this.FetchIGAPI(
 			config.instagram_base_url,
 			'/graphql/query/',
 			config.iPhone,
-			{ params: post_shortcode_query(shortcode) }
-		)
+			{ params: post_shortcode_query(shortcode) },
+		);
 		const graphql = res?.data;
 		return graphql;
-	}
+	};
 
 	/**
-	 * fetch client account profile  
+	 * fetch client account profile
 	 */
 	public accountInfo = async (
-		userID: string = this.accountUserId
+		userID: string = this.accountUserId,
 	): Promise<UserGraphQL> => {
 		try {
 			const res = await this.FetchIGAPI(
 				config.instagram_api_v1,
-				`/users/${userID}/info/`
+				`/users/${userID}/info/`,
 			);
 			const graphql: UserGraphQL = res?.data;
-			return graphql
-		} catch (error) {
-			throw error
+			return graphql;
 		}
-	}
+		catch (error) {
+			throw error;
+		}
+	};
 
 	/**
-	 * fetch profile by username. including email, phone number 
+	 * fetch profile by username. including email, phone number
 	 * @param {username} username
-	 * @returns 
+	 * @returns
 	 */
 	public fetchUser = async (username: username): Promise<IGUserMetadata> => {
 		const userID = await this.getIdByUsername(username);
 		const res = await this.FetchIGAPI(
 			config.instagram_api_v1,
-			`/users/${userID}/info/`
+			`/users/${userID}/info/`,
 		);
 		const graphql: UserGraphQL = res?.data;
 		return {
@@ -254,14 +264,14 @@ export class igApi {
 			contact_phone_number: graphql.user.contact_phone_number,
 			public_email: graphql.user.public_email,
 			account_type: graphql.user.account_type,
-			...graphql
-		}
-	}
+			...graphql,
+		};
+	};
 
 	/**
 	 * hmmm..?
-	 * @param username 
-	 * @returns 
+	 * @param username
+	 * @returns
 	 */
 	public fetchUserV2 = async (username: username) => {
 		const res = await this.FetchIGAPI(
@@ -271,26 +281,26 @@ export class igApi {
 		);
 		const graphql: Graphql = res?.data;
 		return graphql.data?.user as UserGraphQlV2;
-	}
+	};
 
 	/**
 	 * simple method to check is user follow me
-	 * @param username 
+	 * @param username
 	 * @returns true if user is follow me
 	 */
 	public isFollowMe = async (username: username): Promise<boolean | undefined> => {
 		const user = await this.fetchUserV2(username);
 		return user.follows_viewer;
-	}
+	};
 
 	/**
-	 * 
+	 *
 	 * @param {StoriesGraphQL} metadata
 	 * @returns {ItemStories[]}
 	 */
 	private _parseStories = (metadata: StoriesGraphQL): Array<ItemStories> => {
 		const items = metadata.items;
-		let storyList = new Array();
+		const storyList = [];
 		for (let i = 0; i < items.length; i++) {
 			if (items[i].media_type == 1) {
 				storyList.push({
@@ -310,7 +320,8 @@ export class igApi {
 							: null,
 					caption: items[i].caption,
 				});
-			} else {
+			}
+			else {
 				storyList.push({
 					type: 'video',
 					mimetype: 'video/mp4',
@@ -331,10 +342,10 @@ export class igApi {
 			}
 		}
 		return storyList;
-	}
+	};
 
 	/**
-	 * fetches stories metadata 
+	 * fetches stories metadata
 	 * @param {string} username username target to fetch the stories, also work with private profile if you use cookie \w your account that follows target account
 	 * @returns
 	 */
@@ -343,14 +354,15 @@ export class igApi {
 		const res = await this.FetchIGAPI(
 			config.instagram_api_v1,
 			`/feed/user/${userID}/reel_media/`,
-			config.iPhone
+			config.iPhone,
 		);
 		const graphql: StoriesGraphQL = res?.data;
 		const isFollowing = typeof graphql.user?.friendship_status !== 'undefined';
 
 		if (!isFollowing && graphql.user.is_private) {
 			throw new Error('Private profile');
-		} else {
+		}
+		else {
 			return {
 				username: graphql.user.username,
 				stories_count: graphql.media_count,
@@ -358,12 +370,12 @@ export class igApi {
 				graphql,
 			};
 		}
-	}
+	};
 
 	/**
 	 * Fetch all reels/highlight id
 	 * @param {username} username
-	 * @returns 
+	 * @returns
 	 */
 	public _getReelsIds = async (username: username): Promise<ReelsIds[]> => {
 		const userID: string = await this.getIdByUsername(username);
@@ -371,35 +383,35 @@ export class igApi {
 			config.instagram_base_url,
 			'/graphql/query/',
 			config.iPhone,
-			{ params: highlight_ids_query(userID) }
-		)
+			{ params: highlight_ids_query(userID) },
+		);
 		const graphql: HightlighGraphQL = res?.data;
-		let items = new Array();
+		const items = [];
 		graphql.data.user.edge_highlight_reels.edges.map((edge) => {
 			items.push({
 				highlight_id: edge.node.id,
 				cover: edge.node.cover_media.thumbnail_src,
-				title: edge.node.title
-			})
-		})
+				title: edge.node.title,
+			});
+		});
 		return items;
-	}
+	};
 
 	/**
 	 * get media urls from highlight id
 	 * @param {ids} ids of highlight
-	 * @returns 
+	 * @returns
 	 */
 	public _getReels = async (ids: string): Promise<HMedia> => {
 		const res = await this.FetchIGAPI(
 			config.instagram_base_url,
 			'/graphql/query/',
 			config.iPhone,
-			{ params: highlight_media_query(ids) }
-		)
+			{ params: highlight_media_query(ids) },
+		);
 		const graphql = res?.data;
 		return graphql;
-	}
+	};
 
 	private formatHighlight = async (graphql: HMedia): Promise<ReelsMediaData[]> => {
 		return graphql.data.reels_media[0].items.map((item) => ({
@@ -410,8 +422,8 @@ export class igApi {
 			type: item.is_video ? 'video' : 'image',
 			url: item.is_video ? item.video_resources[0].src : item.display_url,
 			dimensions: item.dimensions,
-		}))
-	}
+		}));
+	};
 
 	/**
 	 * fetches highlight metadata
@@ -421,36 +433,37 @@ export class igApi {
 	public fetchHighlights = async (username: username): Promise<IHighlightsMetadata> => {
 		try {
 			const ids = await this._getReelsIds(username);
-			const reels = await Promise.all(ids.map(async x => this.formatHighlight(await this._getReels(x.highlight_id))))
+			const reels = await Promise.all(ids.map(async x => this.formatHighlight(await this._getReels(x.highlight_id))));
 
-			let data: IReelsMetadata[] = [];
+			const data: IReelsMetadata[] = [];
 			for (let i = 0; i < reels.length; i++) {
 				data.push({
 					title: ids[i].title,
 					cover: ids[i].cover,
 					media_count: reels[i].length,
 					highlights_id: ids[i].highlight_id,
-					highlights: reels[i]
-				})
+					highlights: reels[i],
+				});
 			}
-			let json: IHighlightsMetadata = {
+			const json: IHighlightsMetadata = {
 				username,
 				highlights_count: ids.length,
-				data: data
-			}
+				data: data,
+			};
 
 			return json;
-		} catch (error) {
-			throw error
 		}
-	}
+		catch (error) {
+			throw error;
+		}
+	};
 
 	/**
 	 * fetches user posts, with pagination
 	 * @deprecated Does not return all information about a post, use fetchUserPostsV2()
-	 * @param username 
+	 * @param username
 	 * @param end_cursor get end_cursor by fetch user posts first
-	 * @returns 
+	 * @returns
 	 */
 	public fetchUserPosts = async (username: username, end_cursor = ''): Promise<IPaginatedPosts> => {
 		const userId = await this.getIdByUsername(username);
@@ -458,18 +471,18 @@ export class igApi {
 			'query_id': '17880160963012870',
 			'id': userId,
 			'first': 12,
-			'after': end_cursor
-		}
-		const res = await this.FetchIGAPI(config.instagram_base_url, '/graphql/query/', config.android, { params })
+			'after': end_cursor,
+		};
+		const res = await this.FetchIGAPI(config.instagram_base_url, '/graphql/query/', config.android, { params });
 
-		return res?.data?.data.user.edge_owner_to_timeline_media
-	}
+		return res?.data?.data.user.edge_owner_to_timeline_media;
+	};
 
 	/**
 	 * fetches user posts, with pagination
-	 * @param username 
+	 * @param username
 	 * @param end_cursor get end_cursor by fetchUserPostsV2 first
-	 * @returns 
+	 * @returns
 	 */
 
 	public fetchUserPostsV2 = async (username: username, end_cursor = ''): Promise<IPaginatedPosts> => {
@@ -477,15 +490,15 @@ export class igApi {
 		const params = {
 			'query_hash': '69cba40317214236af40e7efa697781d',
 			'variables': {
-				"id": userId,
-				"first": 12,
-				"after": end_cursor
-			}
-		}
-		const res = await this.FetchIGAPI(config.instagram_base_url, '/graphql/query/', config.android, { params })
+				'id': userId,
+				'first': 12,
+				'after': end_cursor,
+			},
+		};
+		const res = await this.FetchIGAPI(config.instagram_base_url, '/graphql/query/', config.android, { params });
 
-		return res?.data?.data.user.edge_owner_to_timeline_media
-	}
+		return res?.data?.data.user.edge_owner_to_timeline_media;
+	};
 
 	private uploadPhoto = async (photo: string | Buffer) => {
 		try {
@@ -506,11 +519,11 @@ export class igApi {
 				image_compression: JSON.stringify({
 					lib_name: 'moz',
 					lib_version: '3.1.m',
-					quality: '80'
-				})
-			}
+					quality: '80',
+				}),
+			};
 
-			const nameEntity = `${uploadId}_0_${randInt(1000000000, 9999999999)}`
+			const nameEntity = `${uploadId}_0_${randInt(1000000000, 9999999999)}`;
 
 			const headers = {
 				'x-entity-type': 'image/jpeg',
@@ -520,44 +533,45 @@ export class igApi {
 				'x-entity-length': Buffer.byteLength(file),
 				'Content-Length': Buffer.byteLength(file),
 				'Content-Type': 'application/octet-stream',
-				'x-ig-app-id': `1217981644879628`,
+				'x-ig-app-id': '1217981644879628',
 				'Accept-Encoding': 'gzip',
 				'X-Pigeon-Rawclienttime': (Date.now() / 1000).toFixed(3),
 				'X-IG-Connection-Speed': `${randInt(3700, 1000)}kbps`,
 				'X-IG-Bandwidth-Speed-KBPS': '-1.000',
 				'X-IG-Bandwidth-TotalBytes-B': '0',
 				'X-IG-Bandwidth-TotalTime-MS': '0',
-			}
+			};
 
-			const headersPhoto = this.buildHeaders(config.android, headers)
+			const headersPhoto = this.buildHeaders(config.android, headers);
 
 			const result = await this.FetchIGAPI(
 				`${config.instagram_base_url}`,
 				`/rupload_igphoto/fb_uploader_${nameEntity}`,
 				config.android,
-				{ headers: headersPhoto, data: file, method: 'POST' }
+				{ headers: headersPhoto, data: file, method: 'POST' },
 			);
-			return result?.data
-		} catch (error) {
-			throw error
+			return result?.data;
 		}
-	}
+		catch (error) {
+			throw error;
+		}
+	};
 
 	/**
 	 * Post a photo to instagram
 	 * @param photo file path or Buffer
 	 * @param type post type
-	 * @param options 
-	 * @returns 
+	 * @param options
+	 * @returns
 	 */
 	public addPost = async (photo: string | Buffer, type: 'feed' | 'story' = 'feed', options: MediaConfigureOptions): Promise<PostFeedResult | PostStoryResult> => {
 		try {
-			const dateObj = new Date()
+			const dateObj = new Date();
 			const now = dateObj
 				.toISOString()
 				.replace(/T/, ' ')
-				.replace(/\..+/, ' ')
-			const offset = dateObj.getTimezoneOffset()
+				.replace(/\..+/, ' ');
+			const offset = dateObj.getTimezoneOffset();
 
 			const responseUpload = await this.uploadPhoto(photo);
 
@@ -572,10 +586,10 @@ export class igApi {
 				//     crop_center: [0.0, -0.0],
 				//     crop_zoom: 1.0
 				// },
-				...options
-			}
+				...options,
+			};
 
-			let headers = {
+			const headers = {
 				'authority': 'www.instagram.com',
 				'x-ig-www-claim': 'hmac.AR2-43UfYbG2ZZLxh-BQ8N0rqGa-hESkcmxat2RqMAXejXE3',
 				'x-instagram-ajax': 'adb961e446b7-hot',
@@ -592,44 +606,45 @@ export class igApi {
 				'referer': 'https://www.instagram.com/',
 				'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
 				'cookie': `${this.IgCookie}`,
-			}
+			};
 
 			const result = await this.FetchIGAPI(
 				`${config.instagram_api_v1}`,
 				`/media/${type === 'feed' ? 'configure/' : 'configure_to_story/'}`,
 				config.android,
-				{ data: new URLSearchParams(Object.entries(payloadForm)).toString(), method: 'POST', headers: headers }
+				{ data: new URLSearchParams(Object.entries(payloadForm)).toString(), method: 'POST', headers: headers },
 			);
 
-			return result?.data
-		} catch (error) {
-			throw error
+			return result?.data;
 		}
-	}
+		catch (error) {
+			throw error;
+		}
+	};
 
 	/**
-	 * 
+	 *
 	 * @param photo input must be filepath or buffer
 	 */
 	public changeProfilePicture = async (photo: string | Buffer): Promise<IChangedProfilePicture> => {
-		const media = Buffer.isBuffer(photo) ? bufferToStream(photo) : fs.createReadStream(photo)
+		const media = Buffer.isBuffer(photo) ? bufferToStream(photo) : fs.createReadStream(photo);
 
 		const form = new FormData();
-		form.append('profile_pic', media, 'profilepic.jpg')
+		form.append('profile_pic', media, 'profilepic.jpg');
 
 		const headers = this.buildHeaders(
 			config.desktop,
 			{
 				'X-CSRFToken': await getCsrfToken(),
-				...form.getHeaders()
-			}
-		)
+				...form.getHeaders(),
+			},
+		);
 		const result = await this.FetchIGAPI(config.instagram_base_url, '/accounts/web_change_profile_picture/', config.desktop, {
 			method: 'post',
 			data: form,
-			headers
-		})
+			headers,
+		});
 
-		return result?.data
-	}
+		return result?.data;
+	};
 }
